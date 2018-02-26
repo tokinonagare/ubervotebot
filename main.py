@@ -190,7 +190,9 @@ class WebhookHandler(webapp2.RequestHandler):
                         if user_answer['chosen_answers'] >> i & 1:
                             voted += 1
 
-                    keys += '[{"text": "'+answer+' - '+str(voted)+'", "callback_data": "'+data+'"}],'
+                    # keys += '[{"text": "'+answer+' - '+str(voted)+'", "callback_data": "'+data+'"}],'
+                    # here hide the amount of the answers, to avoid interfere
+                    keys += '[{"text": "'+answer+'", "callback_data": "'+data+'"}],'
 
                 if share_button:
                     keys += '[{"text": "share", "switch_inline_query": "'+poll.get('id')+'"}],'
