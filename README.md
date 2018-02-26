@@ -1,5 +1,6 @@
 # ubervotebot
 ## The best Telegram bot to create polls with.
+## Hide the vote result, to avoid interfere 隐藏了投票结果的显示, 避免投票受到影响
 
 Ubervotebot is fast and easy to use! Both for you and people you send the poll to.
 The results can be shown in a number of different ways, please see the screenshots below.
