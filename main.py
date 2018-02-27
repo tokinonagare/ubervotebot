@@ -200,16 +200,21 @@ class WebhookHandler(webapp2.RequestHandler):
                 keys = keys[:-1] + ']' # removes the last comma
             return '{"inline_keyboard": '+keys+'}'
 
+        # can know who voted
         def get_poll_status(poll):
-            voted = 0
+            user_names = []
             for i in range(len(poll['answers'])):
 
                 # Count how often answer at index i was voted for
                 for user_answer in poll['answered']:
                     if user_answer['chosen_answers'] >> i & 1:
-                        voted += 1
+                        user_name = body['callback_query']['from']['first_name']
+                        user_names.append(user_name)
 
-            return '\n' + 'voted amount: ' + str(voted)
+                        # avoid name appear is related to vote select
+                        user_names.sort()
+
+            return '\n' + 'voted user' + '('+str(len(user_names))+'): ' + ','.join(user_names)
 
         def telegram_method(name, keyvalues):
 
@@ -497,7 +502,7 @@ class WebhookHandler(webapp2.RequestHandler):
                                 if u:
                                     names.append(u.get_name())
                         
-                        msg += '\n' + poll['answers'][i] + '\n' + '('+str(len(names))+'): ' + ', '.join(names) + '\n'
+                        msg += '\n' + poll['answers'][i] + '\n' + '('+str(len(names))+'): ' + ','.join(names)
                     
                     reply(msg)
 
