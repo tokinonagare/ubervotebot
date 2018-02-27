@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ###############################################################
 # ubervotebot is a bot made for Telegram and was written by
 # Lars Martens. It helps you manage polls and show the
@@ -516,7 +517,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     CELL_SIZE = max(img_checked.size)
                     FONT_SIZE = CELL_SIZE//2
                     SPACE = 20
-                    font = ImageFont.truetype('gfx/Symbola.ttf', size=FONT_SIZE)
+                    font = ImageFont.truetype('gfx/weiruanzhengtihei.ttf', size=FONT_SIZE)
 
                     # organize data
                     poll = user.get_active_poll()
@@ -602,11 +603,11 @@ class WebhookHandler(webapp2.RequestHandler):
                     send_action_photo()
 
                     # bar chart
-                    BAR_HEIGHT = 80
-                    BAR_WIDTH = 400
-                    FONT_SIZE = 40
-                    SPACE = 10
-                    font = ImageFont.truetype('gfx/Symbola.ttf', size=FONT_SIZE)
+                    BAR_HEIGHT = 40
+                    BAR_WIDTH = 200
+                    FONT_SIZE = 19
+                    SPACE = 5
+                    font = ImageFont.truetype('gfx/weiruanzhengtihei.ttf', size=FONT_SIZE)
 
                     # organize data
                     poll = user.get_active_poll()
