@@ -85,7 +85,20 @@ class User(ndb.Model):
                 return u
         # nothing was found or could be created
         return None
-    
+
+    @classmethod
+    def get_username(cls, id):
+        """get user name for display on vote view"""
+        u = cls.query().filter(ndb.GenericProperty('id') == id).get()
+
+        logging.info('getusername + u: ')
+        logging.info(u)
+        
+        if u:
+            return u.get_name()
+
+        return None
+
     @classmethod
     def create_random_poll_id(cls):
         o = []
@@ -203,14 +216,21 @@ class WebhookHandler(webapp2.RequestHandler):
 
         # can know who voted
         def get_poll_status(poll):
+
             user_names = []
+
             for i in range(len(poll['answers'])):
 
                 # Count how often answer at index i was voted for
                 for user_answer in poll['answered']:
                     if user_answer['chosen_answers'] >> i & 1:
-                        user_name = body['callback_query']['from']['first_name']
-                        user_names.append(user_name)
+
+                        user_name = User.get_username(user_answer['user_id'])
+                        if user_name:
+                            user_names.append(user_name)
+
+                        logging.info('user_names: ')
+                        logging.info(user_names)
 
                         # avoid name appear is related to vote select
                         user_names.sort()
@@ -225,6 +245,8 @@ class WebhookHandler(webapp2.RequestHandler):
                 encoded[key] = keyvalues[key].encode('utf-8')
 
             try:
+                logging.info(BASE_URL + str(name) + str(urllib.urlencode(encoded)))
+
                 resp = urllib2.urlopen(BASE_URL + name, urllib.urlencode(encoded)).read()
 
                 logging.info(name+' response:')
@@ -265,6 +287,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     'switch_pm_text': 'Create new poll',
                     'switch_pm_parameter': 'new'
                 }
+
                 if poll:
                     infos['results'] = '[{"type": "article", "id": "'+poll.get('id')+'", "title": "Click here to send poll", "description": "'+poll['question']+'", "thumb_url": "https://raw.githubusercontent.com/haselkern/ubervotebot/master/gfx/botpic.png", "input_message_content": {"message_text": "'+poll['question']+'"}, "reply_markup": '+get_poll_inline_keyboard(poll)+'}]'
                 telegram_method('answerInlineQuery', infos)
@@ -380,7 +403,7 @@ class WebhookHandler(webapp2.RequestHandler):
             try:
                 message = body['message']
             except:
-                logging.error('No message found on body: ' + str(body))
+                # logging.error('No message found on body: ' + str(body))
                 return
 
             message_id = message.get('message_id')
