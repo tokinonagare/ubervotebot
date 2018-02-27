@@ -200,7 +200,17 @@ class WebhookHandler(webapp2.RequestHandler):
                 keys = keys[:-1] + ']' # removes the last comma
             return '{"inline_keyboard": '+keys+'}'
 
-        
+        def get_poll_status(poll):
+            voted = 0
+            for i in range(len(poll['answers'])):
+
+                # Count how often answer at index i was voted for
+                for user_answer in poll['answered']:
+                    if user_answer['chosen_answers'] >> i & 1:
+                        voted += 1
+
+            return '\n' + 'voted amount: ' + str(voted)
+
         def telegram_method(name, keyvalues):
 
             # encode strings
@@ -290,7 +300,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 share_button = not 'inline_message_id' in body['callback_query']
                 
                 infos = {
-                    'text': poll['question'],
+                    'text': poll['question'] + get_poll_status(poll),
                     'reply_markup': get_poll_inline_keyboard(poll, share_button)
                 }
                 if inline_message_id:
