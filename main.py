@@ -91,9 +91,8 @@ class User(ndb.Model):
         """get user name for display on vote view"""
         u = cls.query().filter(ndb.GenericProperty('id') == id).get()
 
-        logging.info('getusername + u: ')
-        logging.info(u)
-        
+        logging.info('getusername + u: ' + str(u))
+
         if u:
             return u.get_name()
 
@@ -180,8 +179,8 @@ class WebhookHandler(webapp2.RequestHandler):
     def post(self):
         urlfetch.set_default_fetch_deadline(60)
         body = json.loads(self.request.body)
-        logging.info('request body:')
-        logging.info(body)
+        logging.info('request body:' + str(body))
+
         self.response.write(json.dumps(body))
 
         update_id = body['update_id']
@@ -229,8 +228,7 @@ class WebhookHandler(webapp2.RequestHandler):
                         if user_name:
                             user_names.append(user_name)
 
-                        logging.info('user_names: ')
-                        logging.info(user_names)
+                        logging.info('user_names: ' + str(user_names))
 
                         # avoid name appear is related to vote select
                         user_names.sort()
@@ -249,9 +247,8 @@ class WebhookHandler(webapp2.RequestHandler):
 
                 resp = urllib2.urlopen(BASE_URL + name, urllib.urlencode(encoded)).read()
 
-                logging.info(name+' response:')
-                logging.info(resp)
-                
+                logging.info(name+' response:' + resp)
+
             except Exception, e:
                 logging.warn(e)
         
@@ -403,7 +400,7 @@ class WebhookHandler(webapp2.RequestHandler):
             try:
                 message = body['message']
             except:
-                # logging.error('No message found on body: ' + str(body))
+                logging.error('No message found on body: ' + str(body))
                 return
 
             message_id = message.get('message_id')
