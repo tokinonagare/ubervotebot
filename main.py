@@ -242,7 +242,7 @@ class WebhookHandler(webapp2.RequestHandler):
                         # avoid name appear is related to vote select
                         user_names.sort()
 
-            return '\n' + 'voted user' + '('+str(len(user_names))+'): ' + ','.join(user_names)
+            return '\n' + '\n' + u'已投票的大笨蛋: ' +str(len(user_names)) + '\n' + '\n' + ', '.join(user_names)
 
         def telegram_method(name, keyvalues):
 
