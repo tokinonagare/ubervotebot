@@ -58,6 +58,7 @@ class User(ndb.Model):
     activePoll = ndb.StringProperty() # the poll id the user is modifying at the moment
     activeState = ndb.StringProperty() # what operation is the user currently in
     polls = ndb.TextProperty() # stores polls and answers in json: [{...},{...}]
+    isProcessing = None  # 用于确认投票的数据修改是否在进行中, 避免并发的产生
 
     def init(self):
         # load
@@ -91,7 +92,7 @@ class User(ndb.Model):
         """get user name for display on vote view"""
         u = cls.query().filter(ndb.GenericProperty('id') == id).get()
 
-        logging.info('getusername + u: ' + str(u))
+        logging.info('get_username + u: ' + str(u))
 
         if u:
             return u.get_name()
@@ -105,7 +106,7 @@ class User(ndb.Model):
             c = random.randrange(ord('A'), ord('Z') + 1)
             o.append(chr(c))
         return ''.join(o)
-    
+
     def create_valid_poll_id(self):
         '''Generates poll ids until we have found a valid one'''
         taken_ids = list(map(lambda x: x.get('id'), self.polls_arr))
@@ -120,7 +121,7 @@ class User(ndb.Model):
             if poll.get('id') == id:
                 return poll
         return None
-    
+
     def get_active_poll(self):
         return self.get_poll(self.activePoll)
 
@@ -131,7 +132,7 @@ class User(ndb.Model):
 
     def get_active_poll_answers(self):
         return self.get_active_poll()['answers']
-    
+
     def get_name(self):
         '''Pretty print name'''
         o = self.name
@@ -148,10 +149,18 @@ class User(ndb.Model):
         poll['owner'] = self.id
         self.polls_arr.append(poll)
         return poll
-    
+
     def serialize(self):
         self.polls = json.dumps(self.polls_arr)
         self.put()
+
+    def serialize_by_check(self):
+        self.polls = json.dumps(self.polls_arr)
+        self.put()
+
+        # 当保存数据成功后, 则可以进行下一次投票
+        logging.info('processing check = ' + str(User.isProcessing))
+        User.isProcessing = None
 
 
 # ================================
@@ -336,6 +345,13 @@ class WebhookHandler(webapp2.RequestHandler):
                     infos['message_id'] = str(message_id)
                 telegram_method('editMessageText', infos)
 
+            logging.info('post isProcessing = ' + str(User.isProcessing))
+            if User.isProcessing:
+                ticker(u'vote is processing, please try again later!')
+                return
+            else:
+                User.isProcessing = 'isProcessing'
+
             data = data.split(';')
             data[0] = int(data[0])
             data[2] = int(data[2])
@@ -358,7 +374,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     # append new user
                     user_answer = {'user_id': user.id, 'chosen_answers': 0}
                     poll['answered'].append(user_answer)
-                
+
                 # chosen_answers is an integer where the bits represent if an answer was chosen or not.
                 # the rightmost bit represents the answer with index 0
 
@@ -372,19 +388,21 @@ class WebhookHandler(webapp2.RequestHandler):
                     ticker('You cannot select more than ' + str(poll['max_answers']) + ' answers.')
                 # everything okay, save
                 else:
+                    # 修改回答的数据
                     user_answer['chosen_answers'] = ua_next
+
                     # send feedback
                     selected_answer = poll['answers'][data[2]]
                     if ua_next > ua:
                         ticker('You voted for: ' + selected_answer)
                     else:
                         ticker('You took your vote back.')
-                
+
                 # update poll display
                 update_keyboard(poll)
 
                 # save poll
-                poll_owner.serialize()
+                poll_owner.serialize_by_check()
 
             except Exception, e:
                 # This exception occurs when we send an update that doesn't change the message or its keyboard
