@@ -43,10 +43,14 @@ STATE_RESULT_CHOOSE_POLL = 'RESULT_CHOOSE_POLL'
 STATE_RESULT_CHOOSE_TYPE = 'RESULT_CHOOSE_TYPE'
 
 
-RESULT_TYPE_LIST = 'list names'
-RESULT_TYPE_NUMBERS = 'only count votes'
-RESULT_TYPE_GRID = 'grid (like a doodle)'
-RESULT_TYPE_BARS = 'bars'
+# RESULT_TYPE_LIST = 'list names'
+# RESULT_TYPE_NUMBERS = 'only count votes'
+# RESULT_TYPE_GRID = 'grid (like a doodle)'
+# RESULT_TYPE_BARS = 'bars'
+RESULT_TYPE_LIST = u'显示投票人'
+RESULT_TYPE_NUMBERS = u'不含投票人'
+RESULT_TYPE_GRID = u'显示投票人的图表'
+RESULT_TYPE_BARS = u'不含投票人的图表'
 
 # ================================
 
@@ -473,23 +477,27 @@ class WebhookHandler(webapp2.RequestHandler):
                         reply(f.read())
 
                 elif text == '/new' or text == '/start new':
-                    reply('Okay, a new poll. What should the question be?')
+                    # reply('Okay, a new poll. What should the question be?')
+                    reply(u'请问投票的主题是什么?')
                     user.activeState = STATE_CREATE_POLL_CHOOSE_QUESTION
                 
                 elif text == '/delete':
                     if len(user.polls_arr) > 0:
-                        reply('Choose a poll to delete or /cancel', keyboard=get_polls_keyboard())
+                        # reply('Choose a poll to delete or /cancel', keyboard=get_polls_keyboard())
+                        reply(u'选择一个投票删除 或者可以 /cancel (取消)', keyboard=get_polls_keyboard())
                         user.activeState = STATE_DELETE_POLL
                     else:
-                        reply('You have no polls to delete.')
-                
+                        # reply('You have no polls to delete.')
+                        reply(u'投票空空如也, 快去发起一个新投票吧 O(∩_∩)O~~')
+
                 elif text == '/results':
                     if len(user.polls_arr) > 0:
-                        reply('Choose a poll to show results from or /cancel', keyboard=get_polls_keyboard())
+                        # reply('Choose a poll to show results from or /cancel', keyboard=get_polls_keyboard())
+                        reply(u'选择一个投票展示结果 或者可以 /cancel (取消)', keyboard=get_polls_keyboard())
                         user.activeState = STATE_RESULT_CHOOSE_POLL
                     else:
-                        reply('You have no polls you could show results from. Create one with /new')
-
+                        # reply('You have no polls you could show results from. Create one with /new')
+                        reply(u'投票空空如也, 快去发起一个新投票吧 O(∩_∩)O~~')
                 else:
                     # show help
                     with open('help.txt', 'r') as f:
@@ -498,9 +506,11 @@ class WebhookHandler(webapp2.RequestHandler):
             elif user.activeState == STATE_RESULT_CHOOSE_POLL:
                 if text == '/cancel':
                     user.activeState = STATE_DEFAULT
-                    reply('Okay, no results will be shown.')
+                    # reply('Okay, no results will be shown.')
+                    reply(u'已取消结果的展示')
                 elif text.startswith('/'):
-                    reply('Unrecognized command.')
+                    # reply('Unrecognized command.')
+                    reply(u'请输入一个正确的命令')
                 else:
                     poll_id = text[:5]
                     poll = user.get_poll(poll_id)
@@ -509,15 +519,18 @@ class WebhookHandler(webapp2.RequestHandler):
                         if len(poll['answered']) > 0:
                             user.activePoll = poll_id
                             user.activeState = STATE_RESULT_CHOOSE_TYPE
-                            reply('How should the results be formatted?', keyboard='{"keyboard": [["'+RESULT_TYPE_LIST+'"],["'+RESULT_TYPE_NUMBERS+'"],["'+RESULT_TYPE_GRID+'"],["'+RESULT_TYPE_BARS+'"]], "resize_keyboard": true}')
+                            # reply('How should the results be formatted?', keyboard='{"keyboard": [["'+RESULT_TYPE_LIST+'"],["'+RESULT_TYPE_NUMBERS+'"],["'+RESULT_TYPE_GRID+'"],["'+RESULT_TYPE_BARS+'"]], "resize_keyboard": true}')
+                            reply(u'请选择一个结果的展示方法', keyboard='{"keyboard": [["'+RESULT_TYPE_LIST+'"],["'+RESULT_TYPE_NUMBERS+'"],["'+RESULT_TYPE_GRID+'"],["'+RESULT_TYPE_BARS+'"]], "resize_keyboard": true}')
                         else:
                             # No people have answered that poll, no reason for results.
                             user.activePoll = None
                             user.activeState = STATE_DEFAULT
-                            reply('No one has answered this poll yet.')
-                        
+                            # reply('No one has answered this poll yet.')
+                            reply(u'目前还没有大笨蛋投票呢 ^_^')
+
                     else:
-                        reply('No poll with that id was found.')
+                        # reply('No poll with that id was found.')
+                        reply(u'请确认投票的ID是正确的')
                         user.activeState = STATE_DEFAULT
             
             elif user.activeState == STATE_RESULT_CHOOSE_TYPE:
@@ -528,14 +541,15 @@ class WebhookHandler(webapp2.RequestHandler):
                     return max(dimensions) ** 2 * 4 / (1000**2) < 100
 
                 if text == '/cancel':
-                    reply('Okay, no results will be shown.')
+                    # reply('Okay, no results will be shown.')
+                    reply(u'已取消展示结果')
                     user.activeState = STATE_DEFAULT
 
                 elif text == RESULT_TYPE_LIST:
                     # list names of voters
                     poll = user.get_active_poll()
 
-                    msg = poll['question']+'\n- Results -\n'
+                    msg = poll['question']+'\n- 投票结果 -\n'
 
                     for i in range(len(poll['answers'])):
                         names = []
@@ -636,9 +650,10 @@ class WebhookHandler(webapp2.RequestHandler):
                         # send image
                         output = StringIO.StringIO()
                         img.save(output, 'PNG')
-                        send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))
+                        send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - 投票结果').encode('utf-8'))
                     else:
-                        reply('The image would be too big to send you. Please choose a different result format.')
+                        # reply('The image would be too big to send you. Please choose a different result format.')
+                        reply(u'图片太大了...只能选其他的结果展示方式了 (╯﹏╰)')
 
 
                 elif text == RESULT_TYPE_BARS:
@@ -718,7 +733,8 @@ class WebhookHandler(webapp2.RequestHandler):
                         img.save(output, 'PNG')
                         send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))
                     else:
-                        reply('The image would be too big to send you. Please choose a different result format.')
+                        # reply('The image would be too big to send you. Please choose a different result format.')
+                        reply(u'图片太大了...只能选其他的结果展示方式了 (╯﹏╰)')
 
                 else:
                     # just show number of votes
@@ -744,17 +760,20 @@ class WebhookHandler(webapp2.RequestHandler):
 
                 if text == '/cancel':
                     user.activeState = STATE_DEFAULT
-                    reply('Nothing was deleted.')
+                    # reply('Nothing was deleted.')
+                    reply(u'已取消删除投票的操作')
                 else:
                     poll_id = text[:5]
                     poll = user.get_poll(poll_id)
                     if poll:
                         title = poll['question']
-                        reply('Do you really want to delete "'+title+'"?', keyboard='{"keyboard": [["yes", "no"]], "resize_keyboard": true}')
+                        # reply('Do you really want to delete "'+title+'"?', keyboard='{"keyboard": [["yes", "no"]], "resize_keyboard": true}')
+                        reply(u'请确认删除 "'+title+'"?', keyboard='{"keyboard": [["yes", "no"]], "resize_keyboard": true}')
                         user.activePoll = poll_id
                         user.activeState = STATE_DELETE_POLL_CONFIRM
                     else:
-                        reply('No poll with that id was found.')
+                        # reply('No poll with that id was found.')
+                        reply(u'没有找到符合ID的投票呢')
                         user.activeState = STATE_DEFAULT
              
             elif user.activeState == STATE_DELETE_POLL_CONFIRM:
@@ -763,9 +782,11 @@ class WebhookHandler(webapp2.RequestHandler):
                     poll = user.get_active_poll()
                     title = poll['question']
                     user.delete_active_poll()
-                    reply('Deleted "'+title+'"')
+                    # reply('Deleted "'+title+'"')
+                    reply(u'成功删除 "'+title+'"')
                 else:
-                    reply('Nothing was deleted.')
+                    # reply('Nothing was deleted.')
+                    reply(u'放弃删除.')
 
                 user.activePoll = None
                 user.activeState = STATE_DEFAULT
@@ -774,7 +795,8 @@ class WebhookHandler(webapp2.RequestHandler):
 
                 if text == '/cancel':
                     user.delete_active_poll()
-                    reply('Cancelled creating a poll.')
+                    # reply('Cancelled creating a poll.')
+                    reply(u'取消创建投票')
                     user.activeState = STATE_DEFAULT
                 else:
                     # new poll
@@ -783,13 +805,15 @@ class WebhookHandler(webapp2.RequestHandler):
                     poll['question'] = poll['question']
                     user.activeState = STATE_CREATE_POLL_ADD_ANSWER
                     user.activePoll = poll['id']
-                    reply('Now send the first answer to that question.')
-            
+                    # reply('Now send the first answer to that question.')
+                    reply(u'请给出第一个选项')
+
             elif user.activeState == STATE_CREATE_POLL_ADD_ANSWER:
 
                 if text == '/cancel':
                     user.delete_active_poll()
-                    reply('Cancelled creating a poll.')
+                    # reply('Cancelled creating a poll.')
+                    reply(u'取消投票的创建')
                     user.activeState = STATE_DEFAULT
 
                 elif text == '/done':
@@ -808,22 +832,26 @@ class WebhookHandler(webapp2.RequestHandler):
                         # Convert array to well-formed string so that we can send it
                         keys = str(keys).replace('\'', '"')
                         
-                        reply('How many options should each user be able to select?', keyboard='{"keyboard": '+keys+', "resize_keyboard": true}')
+                        # reply('How many options should each user be able to select?', keyboard='{"keyboard": '+keys+', "resize_keyboard": true}')
+                        reply(u'该投票允许选择多少个选项?', keyboard='{"keyboard": '+keys+', "resize_keyboard": true}')
 
                         user.activeState = STATE_CREATE_POLL_CHOOSE_NUMBER_OF_ANSWERS
                     else:
                         # users shouldn't send /done without answers
-                        reply('You have to send at least one answer! What should the first answer be?')
+                        # reply('You have to send at least one answer! What should the first answer be?')
+                        reply(u'您至少需要提供一个选项哦')
                 else:
                     poll = user.get_active_poll()
                     poll['answers'].append(text.replace('"', '\''))  # replace " with ' to prevent bad URLs. This is not nice, but it works
-                    reply('Cool, now send me another answer or type /done when you\'re finished.')
-            
+                    # reply('Cool, now send me another answer or type /done when you\'re finished.')
+                    reply(u'请输入其他的选项 或者输入 /done (完成) 来结束创建.')
+
             elif user.activeState == STATE_CREATE_POLL_CHOOSE_NUMBER_OF_ANSWERS:
 
                 if text == '/cancel':
                     user.delete_active_poll()
-                    reply('Cancelled creating a poll.')
+                    # reply('Cancelled creating a poll.')
+                    reply(u'取消创建投票')
                     user.activeState = STATE_DEFAULT
                 else:
                     n = -1
@@ -838,7 +866,8 @@ class WebhookHandler(webapp2.RequestHandler):
                     if n >= 1 and n <= max_possible:
                         poll = user.get_active_poll()
                         poll['max_answers'] = n
-                        reply('That\'s it! Your poll is now ready:')
+                        # reply('That\'s it! Your poll is now ready:')
+                        reply(u'♪(^∇^*)啦啦 投票创建成功啦, 投票姬正在拼命生成投票ing (๑•̀ㅂ•́)و✧!')
 
                         # print poll with share button
                         reply(poll['question'], keyboard=get_poll_inline_keyboard(poll, True))
@@ -847,10 +876,12 @@ class WebhookHandler(webapp2.RequestHandler):
                         user.activeState = STATE_DEFAULT
                         user.activePoll = None
                     else:
-                        reply('Please enter a number between 1 and '+str(max_possible)+'!')
+                        # reply('Please enter a number between 1 and '+str(max_possible)+'!')
+                        reply(u'请输入允许选择的数量 在 1 到 '+str(max_possible)+'之间!')
 
             else:
-                reply('Whoops, I messed up. Please try again.\n(Invalid state: ' + str(user.activeState) + ')')
+                # reply('Whoops, I messed up. Please try again.\n(Invalid state: ' + str(user.activeState) + ')')
+                reply(u'啊嘞嘞, 投票姬发生了为止的故障 (๑•ᴗ•๑).\n(故障原因: ' + str(user.activeState) + ')')
                 user.activeState = STATE_DEFAULT
             
             # save everything
@@ -868,7 +899,8 @@ class CounterHandler(webapp2.RequestHandler):
             if len(u.polls_arr) > 0:
                 withPoll += 1
             total += 1
-        self.response.write("Total: " + str(total) + "\nWith poll: " + str(withPoll))
+        # self.response.write("Total: " + str(total) + "\nWith poll: " + str(withPoll))
+        self.response.write("总计: " + str(total) + "\n投票情况: " + str(withPoll))
 
 app = webapp2.WSGIApplication([
     ('/me', MeHandler),
