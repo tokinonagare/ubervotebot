@@ -347,7 +347,8 @@ class WebhookHandler(webapp2.RequestHandler):
 
             logging.info('post isProcessing = ' + str(User.isProcessing))
             if User.isProcessing:
-                ticker(u'vote is processing, please try again later!')
+                # ticker(u'vote is processing, please try again later!')
+                ticker(u'投票姬亚历山大, 请稍后再试 (๑•̀ㅂ•́)و✧')
                 return
             else:
                 User.isProcessing = 'isProcessing'
@@ -362,7 +363,8 @@ class WebhookHandler(webapp2.RequestHandler):
                 poll = poll_owner.get_poll(data[1])
 
                 if not poll:
-                    ticker('This poll is no longer active')
+                    # ticker('This poll is no longer active')
+                    ticker(u'这个投票已经过期啦~~')
                     return
 
                 # get user answer
@@ -385,7 +387,8 @@ class WebhookHandler(webapp2.RequestHandler):
 
                 # too many answers
                 if count_binary_ones(ua_next) > poll['max_answers']:
-                    ticker('You cannot select more than ' + str(poll['max_answers']) + ' answers.')
+                    # ticker('You cannot select more than ' + str(poll['max_answers']) + ' answers.')
+                    ticker(u'只能投 ' + str(poll['max_answers']) + u' 票啦 O(∩_∩)O哈哈~')
                 # everything okay, save
                 else:
                     # 修改回答的数据
@@ -394,9 +397,11 @@ class WebhookHandler(webapp2.RequestHandler):
                     # send feedback
                     selected_answer = poll['answers'][data[2]]
                     if ua_next > ua:
-                        ticker('You voted for: ' + selected_answer)
+                        # ticker('You voted for: ' + selected_answer)
+                        ticker(u'你的票献给了: ' + selected_answer)
                     else:
-                        ticker('You took your vote back.')
+                        # ticker('You took your vote back.')
+                        ticker(u'竟然出尔反尔, 抛弃人家了 (╯﹏╰)')
 
                 # update poll display
                 update_keyboard(poll)
