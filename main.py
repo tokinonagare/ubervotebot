@@ -549,7 +549,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     # list names of voters
                     poll = user.get_active_poll()
 
-                    msg = poll['question']+'\n- 投票结果 -\n'
+                    msg = poll['question']+u'\n- 投票结果 -\n'
 
                     for i in range(len(poll['answers'])):
                         names = []
@@ -650,7 +650,7 @@ class WebhookHandler(webapp2.RequestHandler):
                         # send image
                         output = StringIO.StringIO()
                         img.save(output, 'PNG')
-                        send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - 投票结果').encode('utf-8'))
+                        send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+u' - 投票结果').encode('utf-8'))
                     else:
                         # reply('The image would be too big to send you. Please choose a different result format.')
                         reply(u'图片太大了...只能选其他的结果展示方式了 (╯﹏╰)')
