@@ -505,9 +505,9 @@ class WebhookHandler(webapp2.RequestHandler):
 
                             _keyboard = {
                                 "keyboard": [RESULT_TYPE_LIST, RESULT_TYPE_NUMBERS],
-                                "resize_keyboard": True
+                                "resize_keyboard": 'true'
                             }
-                            reply(u'请选择一个结果的展示方法', keyboard=json.dumps(_keyboard))
+                            reply(u'请选择一个结果的展示方法', keyboard=str(json.dumps(_keyboard)))
                         else:
                             # No people have answered that poll, no reason for results.
                             user.activePoll = None
