@@ -505,7 +505,7 @@ class WebhookHandler(webapp2.RequestHandler):
 
                             _keyboard = {
                                 "keyboard": [RESULT_TYPE_LIST, RESULT_TYPE_NUMBERS],
-                                "resize_keyboard": true
+                                "resize_keyboard": True
                             }
                             reply(u'请选择一个结果的展示方法', keyboard=json.dumps(_keyboard))
                         else:
