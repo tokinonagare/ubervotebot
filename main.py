@@ -856,7 +856,7 @@ class WebhookHandler(webapp2.RequestHandler):
                         user.activePoll = None
                     else:
                         # reply('Please enter a number between 1 and '+str(max_possible)+'!')
-                        reply(u'请输入允许选择的数量 在 1 到 '+str(max_possible)+'之间!')
+                        reply(u'请输入允许选择的数量 在 1 到 '+str(max_possible)+u'之间!')
 
             else:
                 # reply('Whoops, I messed up. Please try again.\n(Invalid state: ' + str(user.activeState) + ')')
@@ -879,7 +879,7 @@ class CounterHandler(webapp2.RequestHandler):
                 withPoll += 1
             total += 1
         # self.response.write("Total: " + str(total) + "\nWith poll: " + str(withPoll))
-        self.response.write("总计: " + str(total) + "\n投票情况: " + str(withPoll))
+        self.response.write(u"总计: " + str(total) + u"\n投票情况: " + str(withPoll))
 
 app = webapp2.WSGIApplication([
     ('/me', MeHandler),
