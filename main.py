@@ -393,6 +393,8 @@ class WebhookHandler(webapp2.RequestHandler):
                         # update poll display
                         poll['is_show_results'] = 'True'
                         update_keyboard(poll)
+                    else:
+                        ticker(u'又不是你发的投票, 想偷看门儿都没有 (￣３￣)a')
 
                     User.isProcessing = None
 
