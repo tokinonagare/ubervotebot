@@ -146,7 +146,7 @@ class User(ndb.Model):
         poll['answers'] = []
         poll['answered'] = []
         poll['owner'] = self.id
-        poll['is_show_results'] = 'False'
+        poll['is_show_results'] = 'None'
         self.polls_arr.append(poll)
         return poll
 
@@ -218,9 +218,15 @@ class WebhookHandler(webapp2.RequestHandler):
                 if share_button:
                     keys += '[{"text": "share", "switch_inline_query": "'+poll.get('id')+'"}],'
 
-                # 实名显示投票结果
-                show_poll_results_data = str(poll['owner']) + ';' + str(poll['id']) + ';' + 'show_poll_results'
-                keys += '[{"text": "Show Results", "callback_data": "'+show_poll_results_data+'"}],'
+                # 实名显示投票结果按钮
+                show_poll_results_data_display_name = \
+                    str(poll['owner']) + ';' + str(poll['id']) + ';' + 'show_poll_results_display_name'
+                keys += u'[{"text": "实名显示结果", "callback_data": "'+show_poll_results_data_display_name+'"}],'
+
+                # 匿名显示投票结果按钮
+                show_poll_results_data_hide_name = \
+                    str(poll['owner']) + ';' + str(poll['id']) + ';' + 'show_poll_results_hide_name'
+                keys += u'[{"text": "匿名显示结果", "callback_data": "'+show_poll_results_data_hide_name+'"}],'
 
                 keys = keys[:-1] + ']' # removes the last comma
             return '{"inline_keyboard": '+keys+'}'
@@ -228,8 +234,8 @@ class WebhookHandler(webapp2.RequestHandler):
         # can know who voted
         def get_poll_status(poll):
 
+            # 显示已投票的人
             user_names = []
-
             for i in range(len(poll['answers'])):
 
                 # Count how often answer at index i was voted for
@@ -245,11 +251,12 @@ class WebhookHandler(webapp2.RequestHandler):
                         # avoid name appear is related to vote select
                         user_names.sort()
 
-            msg = '\n' + '\n' + u'已投票的大笨蛋: ' +str(len(user_names)) + '\n' + '\n' + ', '.join(user_names) + '\n'
+            poll_results = '\n' + '\n' + u'已投票的大笨蛋: ' +str(len(user_names)) + '\n' + '\n' + ', '.join(user_names) + '\n'
 
-            if poll['is_show_results'] == 'True':
+            # 显示实名的投票结果
+            if poll['is_show_results'] == 'display_name':
 
-                msg += u'\n- 投票结果 -\n'
+                poll_results += u'\n- 投票结果 -\n'
 
                 for i in range(len(poll['answers'])):
                     names = []
@@ -260,9 +267,23 @@ class WebhookHandler(webapp2.RequestHandler):
                             if u:
                                 names.append(u.get_name())
 
-                    msg += '\n' + poll['answers'][i] + '\n' + '(' + str(len(names)) + '): ' + ','.join(names)
+                    poll_results += '\n' + poll['answers'][i] + '\n' + '(' + str(len(names)) + '): ' + ','.join(names)
 
-            return msg
+            # 显示匿名的投票结果
+            if poll['is_show_results'] == 'hide_name':
+
+                poll_results += u'\n- 投票结果 -\n'
+
+                # count bits for each answer
+                for i in range(len(poll['answers'])):
+                    count = 0
+                    for user_answer in poll['answered']:
+                        if user_answer['chosen_answers'] >> i & 1:
+                            count += 1
+
+                    poll_results += '\n(' + str(count) + ') ' + poll['answers'][i]
+
+            return poll_results
 
         def telegram_method(name, keyvalues):
 
@@ -385,13 +406,17 @@ class WebhookHandler(webapp2.RequestHandler):
                     return
 
                 # 点击投票结果时, 跟新 投票面板 显示投票结果
-                if 'show_poll_results' in data:
+                if 'show_poll_results' in data[2]:
 
                     user_id = body['callback_query']['from']['id']
 
                     if user_id == data[0]:
                         # update poll display
-                        poll['is_show_results'] = 'True'
+                        if 'display_name' in data[2]:
+                            poll['is_show_results'] = 'display_name'
+                        elif 'hide_name' in data[2]:
+                            poll['is_show_results'] = 'hide_name'
+
                         update_keyboard(poll)
                     else:
                         ticker(u'又不是你发的投票, 想偷看门儿都没有 (￣３￣)a')
