@@ -146,7 +146,6 @@ class User(ndb.Model):
         poll['answers'] = []
         poll['answered'] = []
         poll['owner'] = self.id
-        poll['is_show_results'] = 'None'
         self.polls_arr.append(poll)
         return poll
 
@@ -232,9 +231,8 @@ class WebhookHandler(webapp2.RequestHandler):
             return '{"inline_keyboard": '+keys+'}'
 
         # can know who voted
-        def get_poll_status(poll):
+        def get_poll_status(poll, keyboard_status):
 
-            # 显示已投票的人
             user_names = []
             for i in range(len(poll['answers'])):
 
@@ -254,7 +252,7 @@ class WebhookHandler(webapp2.RequestHandler):
             poll_results = '\n' + '\n' + u'已投票的大笨蛋: ' +str(len(user_names)) + '\n' + '\n' + ', '.join(user_names) + '\n'
 
             # 显示实名的投票结果
-            if poll['is_show_results'] == 'display_name':
+            if keyboard_status == 'display_name':
 
                 poll_results += u'\n- 投票结果 -\n'
 
@@ -270,7 +268,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     poll_results += '\n' + poll['answers'][i] + '\n' + '(' + str(len(names)) + '): ' + ','.join(names)
 
             # 显示匿名的投票结果
-            if poll['is_show_results'] == 'hide_name':
+            if keyboard_status == 'hide_name':
 
                 poll_results += u'\n- 投票结果 -\n'
 
@@ -370,13 +368,13 @@ class WebhookHandler(webapp2.RequestHandler):
                     'text': msg
                 })
             
-            def update_keyboard(poll):
+            def update_keyboard(poll, keyboard_status):
 
                 # only show a share button in the chat with the bot
                 share_button = not 'inline_message_id' in body['callback_query']
                 
                 infos = {
-                    'text': poll['question'] + get_poll_status(poll),
+                    'text': poll['question'] + get_poll_status(poll, keyboard_status),
                     'reply_markup': get_poll_inline_keyboard(poll, share_button)
                 }
                 if inline_message_id:
@@ -406,6 +404,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     return
 
                 # 点击投票结果时, 跟新 投票面板 显示投票结果
+                keyboard_status = 'no_results'
                 if 'show_poll_results' in data[2]:
 
                     user_id = body['callback_query']['from']['id']
@@ -413,11 +412,11 @@ class WebhookHandler(webapp2.RequestHandler):
                     if user_id == data[0]:
                         # update poll display
                         if 'display_name' in data[2]:
-                            poll['is_show_results'] = 'display_name'
+                            keyboard_status = 'display_name'
                         elif 'hide_name' in data[2]:
-                            poll['is_show_results'] = 'hide_name'
+                            keyboard_status = 'hide_name'
 
-                        update_keyboard(poll)
+                        update_keyboard(poll, keyboard_status)
                     else:
                         ticker(u'又不是你发的投票, 想偷看门儿都没有 (￣３￣)a')
 
@@ -463,7 +462,7 @@ class WebhookHandler(webapp2.RequestHandler):
                         ticker(u'竟然出尔反尔, 抛弃人家了 (╯﹏╰)')
 
                 # update poll display
-                update_keyboard(poll)
+                update_keyboard(poll, keyboard_status)
 
                 # save poll
                 poll_owner.serialize_by_check()
