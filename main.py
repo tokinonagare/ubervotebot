@@ -6,17 +6,12 @@
 # ontop of @yukuku's telebot project.
 ###############################################################
 
-import StringIO
 import json
 import logging
 import random
 import math
 import urllib
 import urllib2
-
-# for sending images
-from PIL import Image, ImageDraw, ImageFont
-import multipart
 
 # standard app engine imports
 from google.appengine.api import urlfetch
@@ -44,8 +39,7 @@ STATE_RESULT_CHOOSE_TYPE = 'RESULT_CHOOSE_TYPE'
 
 RESULT_TYPE_LIST = u'显示投票人'
 RESULT_TYPE_NUMBERS = u'不含投票人'
-RESULT_TYPE_GRID = u'显示投票人的图表'
-RESULT_TYPE_BARS = u'不含投票人的图表'
+
 
 # ================================
 
@@ -54,9 +48,9 @@ class User(ndb.Model):
     name = ndb.StringProperty()
     surname = ndb.StringProperty()
 
-    activePoll = ndb.StringProperty() # the poll id the user is modifying at the moment
-    activeState = ndb.StringProperty() # what operation is the user currently in
-    polls = ndb.TextProperty() # stores polls and answers in json: [{...},{...}]
+    activePoll = ndb.StringProperty()  # the poll id the user is modifying at the moment
+    activeState = ndb.StringProperty()  # what operation is the user currently in
+    polls = ndb.TextProperty()  # stores polls and answers in json: [{...},{...}]
     isProcessing = None  # 用于确认投票的数据修改是否在进行中, 避免并发的产生
 
     def init(self):
@@ -181,7 +175,9 @@ class SetWebhookHandler(webapp2.RequestHandler):
         urlfetch.set_default_fetch_deadline(60)
         url = self.request.get('url')
         if url:
-            self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
+            self.response.write(
+                json.dumps(json.load(urllib2.urlopen(BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
+
 
 class WebhookHandler(webapp2.RequestHandler):
     def post(self):
@@ -212,23 +208,23 @@ class WebhookHandler(webapp2.RequestHandler):
                             voted += 1
 
                     # here hide the amount of the answers, to avoid interfere
-                    keys += '[{"text": "'+answer+'", "callback_data": "'+data+'"}],'
+                    keys += '[{"text": "' + answer + '", "callback_data": "' + data + '"}],'
 
                 if share_button:
-                    keys += '[{"text": "share", "switch_inline_query": "'+poll.get('id')+'"}],'
+                    keys += '[{"text": "share", "switch_inline_query": "' + poll.get('id') + '"}],'
 
                 # 实名显示投票结果按钮
                 show_poll_results_data_display_name = \
                     str(poll['owner']) + ';' + str(poll['id']) + ';' + 'show_poll_results_display_name'
-                keys += u'[{"text": "实名显示结果", "callback_data": "'+show_poll_results_data_display_name+'"}],'
+                keys += u'[{"text": "实名显示结果", "callback_data": "' + show_poll_results_data_display_name + '"}],'
 
                 # 匿名显示投票结果按钮
                 show_poll_results_data_hide_name = \
                     str(poll['owner']) + ';' + str(poll['id']) + ';' + 'show_poll_results_hide_name'
-                keys += u'[{"text": "匿名显示结果", "callback_data": "'+show_poll_results_data_hide_name+'"}],'
+                keys += u'[{"text": "匿名显示结果", "callback_data": "' + show_poll_results_data_hide_name + '"}],'
 
-                keys = keys[:-1] + ']' # removes the last comma
-            return '{"inline_keyboard": '+keys+'}'
+                keys = keys[:-1] + ']'  # removes the last comma
+            return '{"inline_keyboard": ' + keys + '}'
 
         # can know who voted
         def get_poll_status(poll, keyboard_status):
@@ -249,7 +245,8 @@ class WebhookHandler(webapp2.RequestHandler):
                         # avoid name appear is related to vote select
                         user_names.sort()
 
-            poll_results = '\n' + '\n' + u'已投票的大笨蛋: ' +str(len(user_names)) + '\n' + '\n' + ', '.join(user_names) + '\n'
+            poll_results = '\n' + '\n' + u'已投票的大笨蛋: ' + str(len(user_names)) + '\n' + '\n' + ', '.join(
+                user_names) + '\n'
 
             # 显示实名的投票结果
             if keyboard_status == 'display_name':
@@ -295,31 +292,21 @@ class WebhookHandler(webapp2.RequestHandler):
 
                 resp = urllib2.urlopen(BASE_URL + name, urllib.urlencode(encoded)).read()
 
-                logging.info(name+' response:' + resp)
+                logging.info(name + ' response:' + resp)
 
             except Exception, e:
                 logging.warn(e)
-        
-        def send_image(img, chat_id, caption=''):
-            resp = multipart.post_multipart(BASE_URL + 'sendPhoto', [
-                ('chat_id', str(chat_id)),
-                ('caption', caption),
-                ('reply_markup', '{"hide_keyboard": true}')
-            ], [
-                ('photo', 'image.png', img),
-            ])
-        
+
         def count_binary_ones(n):
             ones = 0
             # number is 0 -> no bits to check
             if n == 0:
                 return 0
             # max number of bits we need to check: int(math.log(n, 2))+1
-            for i in range(int(math.log(n, 2))+1):
+            for i in range(int(math.log(n, 2)) + 1):
                 if n >> i & 1:
                     ones += 1
             return ones
-
 
         # HANDLE INLINE QUERY
         if 'inline_query' in body:
@@ -334,7 +321,10 @@ class WebhookHandler(webapp2.RequestHandler):
                 }
 
                 if poll:
-                    infos['results'] = '[{"type": "article", "id": "'+poll.get('id')+'", "title": "Click here to send poll", "description": "'+poll['question']+'", "thumb_url": "https://raw.githubusercontent.com/haselkern/ubervotebot/master/gfx/botpic.png", "input_message_content": {"message_text": "'+poll['question']+'"}, "reply_markup": '+get_poll_inline_keyboard(poll)+'}]'
+                    infos['results'] = '[{"type": "article", "id": "' + poll.get(
+                        'id') + '", "title": "Click here to send poll", "description": "' + poll[
+                                           'question'] + '", "thumb_url": "https://raw.githubusercontent.com/haselkern/ubervotebot/master/gfx/botpic.png", "input_message_content": {"message_text": "' + \
+                                       poll['question'] + '"}, "reply_markup": ' + get_poll_inline_keyboard(poll) + '}]'
                 telegram_method('answerInlineQuery', infos)
 
             # find User
@@ -367,12 +357,12 @@ class WebhookHandler(webapp2.RequestHandler):
                     'callback_query_id': str(body['callback_query']['id']),
                     'text': msg
                 })
-            
+
             def update_keyboard(poll, keyboard_status):
 
                 # only show a share button in the chat with the bot
                 share_button = not 'inline_message_id' in body['callback_query']
-                
+
                 infos = {
                     'text': poll['question'] + get_poll_status(poll, keyboard_status),
                     'reply_markup': get_poll_inline_keyboard(poll, share_button)
@@ -507,21 +497,19 @@ class WebhookHandler(webapp2.RequestHandler):
                 '''Sets status "sending picture" for this bot.'''
                 telegram_method('sendChatAction', {
                     'chat_id': str(chat_id),
-                    'action' : 'upload_photo'
+                    'action': 'upload_photo'
                 })
-            
-            
+
             # get User
             user = User.get(fr)
-            
+
             def get_polls_keyboard():
                 keys = '['
                 for poll in user.polls_arr:
                     s = poll['id'] + ": " + poll['question']
-                    keys += '["'+s+'"],'
+                    keys += '["' + s + '"],'
                 keys = keys[:-1] + ']'
-                return '{"keyboard": '+keys+', "one_time_keyboard": true, "resize_keyboard": true}'
-                
+                return '{"keyboard": ' + keys + ', "one_time_keyboard": true, "resize_keyboard": true}'
 
             if user.activeState == STATE_DEFAULT:
 
@@ -533,13 +521,6 @@ class WebhookHandler(webapp2.RequestHandler):
                 elif text == '/new' or text == '/start new':
                     reply(u'请问投票的主题是什么?')
                     user.activeState = STATE_CREATE_POLL_CHOOSE_QUESTION
-                
-                elif text == '/delete':
-                    if len(user.polls_arr) > 0:
-                        reply(u'选择一个投票删除 或者可以 /cancel (取消)', keyboard=get_polls_keyboard())
-                        user.activeState = STATE_DELETE_POLL
-                    else:
-                        reply(u'投票空空如也, 快去发起一个新投票吧 O(∩_∩)O~~')
 
                 elif text == '/results':
                     if len(user.polls_arr) > 0:
@@ -551,7 +532,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     # show help
                     with open('help.txt', 'r') as f:
                         reply(f.read())
-            
+
             elif user.activeState == STATE_RESULT_CHOOSE_POLL:
                 if text == '/cancel':
                     user.activeState = STATE_DEFAULT
@@ -567,7 +548,8 @@ class WebhookHandler(webapp2.RequestHandler):
                             user.activePoll = poll_id
                             user.activeState = STATE_RESULT_CHOOSE_TYPE
 
-                            reply(u'请选择一个结果的展示方法', keyboard='{"keyboard": [["'+RESULT_TYPE_LIST+'"],["'+RESULT_TYPE_NUMBERS+'"]], "resize_keyboard": true}')
+                            reply(u'请选择一个结果的展示方法',
+                                  keyboard='{"keyboard": [["' + RESULT_TYPE_LIST + '"],["' + RESULT_TYPE_NUMBERS + '"]], "resize_keyboard": true}')
                         else:
                             # No people have answered that poll, no reason for results.
                             user.activePoll = None
@@ -576,11 +558,10 @@ class WebhookHandler(webapp2.RequestHandler):
                     else:
                         reply(u'请确认投票的ID是正确的')
                         user.activeState = STATE_DEFAULT
-            
+
             elif user.activeState == STATE_RESULT_CHOOSE_TYPE:
 
                 if text == '/cancel':
-                    # reply('Okay, no results will be shown.')
                     reply(u'已取消展示结果')
                     user.activeState = STATE_DEFAULT
 
@@ -588,7 +569,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     # list names of voters
                     poll = user.get_active_poll()
 
-                    msg = poll['question']+u'\n- 投票结果 -\n'
+                    msg = poll['question'] + u'\n- 投票结果 -\n'
 
                     for i in range(len(poll['answers'])):
                         names = []
@@ -598,15 +579,15 @@ class WebhookHandler(webapp2.RequestHandler):
                                 u = User.get(id=user_answer['user_id'])
                                 if u:
                                     names.append(u.get_name())
-                        
-                        msg += '\n' + poll['answers'][i] + '\n' + '('+str(len(names))+'): ' + ','.join(names)
-                    
+
+                        msg += '\n' + poll['answers'][i] + '\n' + '(' + str(len(names)) + '): ' + ','.join(names)
+
                     reply(msg)
 
                 else:
                     # just show number of votes
                     poll = user.get_active_poll()
-                    msg = poll['question']+'\n- Results -\n'
+                    msg = poll['question'] + '\n- Results -\n'
 
                     # count bits for each answer
                     for i in range(len(poll['answers'])):
@@ -614,44 +595,9 @@ class WebhookHandler(webapp2.RequestHandler):
                         for user_answer in poll['answered']:
                             if user_answer['chosen_answers'] >> i & 1:
                                 count += 1
-                        msg += '\n('+str(count)+') ' + poll['answers'][i]
-                    
+                        msg += '\n(' + str(count) + ') ' + poll['answers'][i]
+
                     reply(msg)
-
-                user.activePoll = None
-                user.activeState = STATE_DEFAULT
-            
-            elif user.activeState == STATE_DELETE_POLL:
-
-                if text == '/cancel':
-                    user.activeState = STATE_DEFAULT
-                    # reply('Nothing was deleted.')
-                    reply(u'已取消删除投票的操作')
-                else:
-                    poll_id = text[:5]
-                    poll = user.get_poll(poll_id)
-                    if poll:
-                        title = poll['question']
-                        # reply('Do you really want to delete "'+title+'"?', keyboard='{"keyboard": [["yes", "no"]], "resize_keyboard": true}')
-                        reply(u'请确认删除 "'+title+'"?', keyboard='{"keyboard": [["yes", "no"]], "resize_keyboard": true}')
-                        user.activePoll = poll_id
-                        user.activeState = STATE_DELETE_POLL_CONFIRM
-                    else:
-                        # reply('No poll with that id was found.')
-                        reply(u'没有找到符合ID的投票呢')
-                        user.activeState = STATE_DEFAULT
-             
-            elif user.activeState == STATE_DELETE_POLL_CONFIRM:
-
-                if text == 'yes':
-                    poll = user.get_active_poll()
-                    title = poll['question']
-                    user.delete_active_poll()
-                    # reply('Deleted "'+title+'"')
-                    reply(u'成功删除 "'+title+'"')
-                else:
-                    # reply('Nothing was deleted.')
-                    reply(u'放弃删除.')
 
                 user.activePoll = None
                 user.activeState = STATE_DEFAULT
@@ -660,24 +606,22 @@ class WebhookHandler(webapp2.RequestHandler):
 
                 if text == '/cancel':
                     user.delete_active_poll()
-                    # reply('Cancelled creating a poll.')
                     reply(u'取消创建投票')
                     user.activeState = STATE_DEFAULT
                 else:
                     # new poll
                     poll = user.new_poll()
-                    poll['question'] = text.replace('"', '\'') # replace " with ' to prevent bad URLs. This is not nice, but it works
+                    poll['question'] = text.replace('"',
+                                                    '\'')  # replace " with ' to prevent bad URLs. This is not nice, but it works
                     poll['question'] = poll['question']
                     user.activeState = STATE_CREATE_POLL_ADD_ANSWER
                     user.activePoll = poll['id']
-                    # reply('Now send the first answer to that question.')
                     reply(u'请给出第一个选项')
 
             elif user.activeState == STATE_CREATE_POLL_ADD_ANSWER:
 
                 if text == '/cancel':
                     user.delete_active_poll()
-                    # reply('Cancelled creating a poll.')
                     reply(u'取消投票的创建')
                     user.activeState = STATE_DEFAULT
 
@@ -689,7 +633,6 @@ class WebhookHandler(webapp2.RequestHandler):
 
                         poll = user.get_active_poll()
                         poll['max_answers'] = 1
-                        # reply('That\'s it! Your poll is now ready:')
                         reply(u'♪(^∇^*)啦啦 投票创建成功啦, 投票姬正在拼命生成投票ing (๑•̀ㅂ•́)و✧!')
 
                         # print poll with share button
@@ -700,21 +643,20 @@ class WebhookHandler(webapp2.RequestHandler):
 
                     else:
                         # users shouldn't send /done without answers
-                        # reply('You have to send at least one answer! What should the first answer be?')
                         reply(u'您至少需要提供一个选项哦')
                 else:
                     poll = user.get_active_poll()
-                    poll['answers'].append(text.replace('"', '\''))  # replace " with ' to prevent bad URLs. This is not nice, but it works
-                    # reply('Cool, now send me another answer or type /done when you\'re finished.')
+                    poll['answers'].append(
+                        text.replace('"', '\''))  # replace " with ' to prevent bad URLs. This is not nice, but it works
                     reply(u'请输入其他的选项 或者输入 /done (完成) 来结束创建.')
 
             else:
-                # reply('Whoops, I messed up. Please try again.\n(Invalid state: ' + str(user.activeState) + ')')
                 reply(u'啊嘞嘞, 投票姬发生了为止的故障 (๑•ᴗ•๑).\n(故障原因: ' + str(user.activeState) + ')')
                 user.activeState = STATE_DEFAULT
-            
+
             # save everything
             user.serialize()
+
 
 # Count users
 class CounterHandler(webapp2.RequestHandler):
@@ -728,8 +670,8 @@ class CounterHandler(webapp2.RequestHandler):
             if len(u.polls_arr) > 0:
                 withPoll += 1
             total += 1
-        # self.response.write("Total: " + str(total) + "\nWith poll: " + str(withPoll))
         self.response.write(u"总计: " + str(total) + u"\n投票情况: " + str(withPoll))
+
 
 app = webapp2.WSGIApplication([
     ('/me', MeHandler),
