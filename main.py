@@ -686,21 +686,18 @@ class WebhookHandler(webapp2.RequestHandler):
 
                     if len(poll['answers']) > 0:
                         # prompt for maximum number of answers a user can select
-                        keys = []
-                        cur_row = []
-                        for i in range(len(poll['answers'])):
-                            cur_row.append(str(i+1))
-                            if len(cur_row) > 2 or i == len(poll['answers']) - 1:
-                                # the row is finished, append to key array
-                                keys.append(cur_row)
-                                cur_row = []
-                        # Convert array to well-formed string so that we can send it
-                        keys = str(keys).replace('\'', '"')
-                        
-                        # reply('How many options should each user be able to select?', keyboard='{"keyboard": '+keys+', "resize_keyboard": true}')
-                        reply(u'该投票允许选择多少个选项?', keyboard='{"keyboard": '+keys+', "resize_keyboard": true}')
 
-                        user.activeState = STATE_CREATE_POLL_CHOOSE_NUMBER_OF_ANSWERS
+                        poll = user.get_active_poll()
+                        poll['max_answers'] = 1
+                        # reply('That\'s it! Your poll is now ready:')
+                        reply(u'♪(^∇^*)啦啦 投票创建成功啦, 投票姬正在拼命生成投票ing (๑•̀ㅂ•́)و✧!')
+
+                        # print poll with share button
+                        reply(poll['question'], keyboard=get_poll_inline_keyboard(poll, True))
+
+                        user.activeState = STATE_DEFAULT
+                        user.activePoll = None
+
                     else:
                         # users shouldn't send /done without answers
                         # reply('You have to send at least one answer! What should the first answer be?')
@@ -710,39 +707,6 @@ class WebhookHandler(webapp2.RequestHandler):
                     poll['answers'].append(text.replace('"', '\''))  # replace " with ' to prevent bad URLs. This is not nice, but it works
                     # reply('Cool, now send me another answer or type /done when you\'re finished.')
                     reply(u'请输入其他的选项 或者输入 /done (完成) 来结束创建.')
-
-            elif user.activeState == STATE_CREATE_POLL_CHOOSE_NUMBER_OF_ANSWERS:
-
-                if text == '/cancel':
-                    user.delete_active_poll()
-                    # reply('Cancelled creating a poll.')
-                    reply(u'取消创建投票')
-                    user.activeState = STATE_DEFAULT
-                else:
-                    n = -1
-                    # try to parse number
-                    try:
-                        n = int(text)
-                    except Exception, e:
-                        logging.warn(e)
-
-                    max_possible = len(user.get_active_poll_answers())
-
-                    if n >= 1 and n <= max_possible:
-                        poll = user.get_active_poll()
-                        poll['max_answers'] = n
-                        # reply('That\'s it! Your poll is now ready:')
-                        reply(u'♪(^∇^*)啦啦 投票创建成功啦, 投票姬正在拼命生成投票ing (๑•̀ㅂ•́)و✧!')
-
-                        # print poll with share button
-                        reply(poll['question'], keyboard=get_poll_inline_keyboard(poll, True))
-
-
-                        user.activeState = STATE_DEFAULT
-                        user.activePoll = None
-                    else:
-                        # reply('Please enter a number between 1 and '+str(max_possible)+'!')
-                        reply(u'请输入允许选择的数量 在 1 到 '+str(max_possible)+u'之间!')
 
             else:
                 # reply('Whoops, I messed up. Please try again.\n(Invalid state: ' + str(user.activeState) + ')')
