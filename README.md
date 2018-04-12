@@ -1,23 +1,19 @@
-# ubervotebot
-## The best Telegram bot to create polls with.
-## Hide the vote result, to avoid interfere 隐藏了投票结果的显示, 避免投票受到影响
+# Your Vote bot
+## 基于 Ubervotebot 的 Telegram 投票机器人
+### 隐藏了投票中结果的显示, 避免投票受到影响, 提供了实名和匿名的结果显示方法(只有发起投票的 owner 可以使结果可见)
 
-Ubervotebot is fast and easy to use! Both for you and people you send the poll to.
-The results can be shown in a number of different ways, please see the screenshots below.
+在原有的 Ubervotebot 进行了修改和简化, 提供了匿名的投票方式, 去掉了图片显示结果等方法, 并进行了中文化
 
-Polls will look like this:
+![inline poll](https://raw.githubusercontent.com/tokinonagare/ubervotebot/master/screenshots/poll.png)
 
-![inline poll](https://raw.githubusercontent.com/haselkern/ubervotebot/master/screenshots/poll.jpg)
+投票中和投票后的结果 如下图:
 
-And results can look like this:
+![poll ing](https://raw.githubusercontent.com/tokinonagare/ubervotebot/master/screenshots/poll-ing.png)
 
-![result list](https://raw.githubusercontent.com/haselkern/ubervotebot/master/screenshots/result-list.jpg)
+![result list](https://raw.githubusercontent.com/tokinonagare/ubervotebot/master/screenshots/result-list.png)
 
-![result names](https://raw.githubusercontent.com/haselkern/ubervotebot/master/screenshots/result-names.jpg)
-
-![result names](https://raw.githubusercontent.com/haselkern/ubervotebot/master/screenshots/result-grid.jpg)
-
-![result names](https://raw.githubusercontent.com/haselkern/ubervotebot/master/screenshots/result-bars.jpg)
+![result names](https://raw.githubusercontent.com/tokinonagare/ubervotebot/master/screenshots/result-names.png)
 
 
-This project could not have happened without @yukuku's bot starter kit, [go check it out](https://github.com/yukuku/telebot).
+这个项目需要使用 @yukuku's 的 google cloud 来启动, [go check it out](https://github.com/yukuku/telebot).
+(注: 我自己在 upload 的方法上使用的是 appcfg.py -A your-vote-bot -V 1 update .)
