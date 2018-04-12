@@ -579,11 +579,6 @@ class WebhookHandler(webapp2.RequestHandler):
             
             elif user.activeState == STATE_RESULT_CHOOSE_TYPE:
 
-                def can_create_image_with_dimensions(dimensions):
-                    '''The image has to use less than 128MB in memory.
-                    Check for a bit more, just to be safe. '''
-                    return max(dimensions) ** 2 * 4 / (1000**2) < 100
-
                 if text == '/cancel':
                     # reply('Okay, no results will be shown.')
                     reply(u'已取消展示结果')
@@ -608,177 +603,6 @@ class WebhookHandler(webapp2.RequestHandler):
                     
                     reply(msg)
 
-                elif text == RESULT_TYPE_GRID:
-
-                    send_action_photo()
-                    
-                    # create grid of results (like on doodle.com)
-                    img_checked = Image.open('gfx/checked.png', 'r')
-                    img_unchecked = Image.open('gfx/unchecked.png', 'r')
-                    CELL_SIZE = max(img_checked.size)
-                    FONT_SIZE = CELL_SIZE//2
-                    SPACE = 20
-                    font = ImageFont.truetype('gfx/weiruanzhengtihei.ttf', size=FONT_SIZE)
-
-                    # organize data
-                    poll = user.get_active_poll()
-                    answers = poll['answers']
-                    names = []
-                    answered = []
-
-                    for user_answer in poll['answered']:
-                        # get user name
-                        u = User.get(id=user_answer['user_id'])
-                        names.append(u.get_name())
-                        # get boolean array of answers
-                        chosen_answers = user_answer['chosen_answers']
-                        answered_row = []
-                        for i in range(len(answers)):
-                            answered_row.append(True if chosen_answers >> i & 1 else False)
-                        answered.append(answered_row)
-
-                    # get length of answers and names
-                    longest_name = 0
-                    for name in names:
-                        l = font.getsize(name)[0]
-                        if longest_name < l:
-                            longest_name = l
-
-                    longest_answer = 0
-                    for answer in answers:
-                        l = font.getsize(answer)[0]
-                        if longest_answer < l:
-                            longest_answer = l
-
-                    # now we can create the image with optimal dimensions
-                    dimen = (
-                        longest_name + len(answers)*CELL_SIZE + 3*SPACE,
-                        longest_answer + len(names)*CELL_SIZE + 3*SPACE
-                        )
-
-                    # Check for image size
-                    if can_create_image_with_dimensions(dimen):
-
-                        # we need a square image for nicer rotating, image will get cropped later
-                        img = Image.new('RGB', (max(dimen), max(dimen)), '#FFF')
-                        draw = ImageDraw.Draw(img)
-
-                        # draw names right aligned and vertically centered
-                        for i in range(len(names)):
-                            l = font.getsize(names[i])[0]
-                            draw.text((SPACE + (longest_name - l), longest_answer + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), names[i], '#000', font)
-
-                        # draw answers rotated
-                        img = img.rotate(-90)
-                        draw = ImageDraw.Draw(img)
-
-                        for i in range(len(answers)):
-                            draw.text((img.size[0] - longest_answer - SPACE, longest_name + i*CELL_SIZE + SPACE*2 + (CELL_SIZE-FONT_SIZE)//2), answers[i], '#000', font)
-
-                        img = img.rotate(90)
-                        draw = ImageDraw.Draw(img)
-
-                        # draw grid
-                        for x in range(len(answers)):
-                            for y in range(len(names)):
-                                # draw image for checked/unchecked
-                                offset = (x * CELL_SIZE + longest_name + SPACE*2, y * CELL_SIZE + longest_answer + SPACE*2)
-                                if answered[y][x]:
-                                    img.paste(img_checked, offset)
-                                else:
-                                    img.paste(img_unchecked, offset)
-
-                        # crop image
-                        img = img.crop((0, 0, dimen[0], dimen[1]))
-
-                        # send image
-                        output = StringIO.StringIO()
-                        img.save(output, 'PNG')
-                        send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+u' - 投票结果').encode('utf-8'))
-                    else:
-                        # reply('The image would be too big to send you. Please choose a different result format.')
-                        reply(u'图片太大了...只能选其他的结果展示方式了 (╯﹏╰)')
-
-
-                elif text == RESULT_TYPE_BARS:
-
-                    send_action_photo()
-
-                    # bar chart
-                    BAR_HEIGHT = 40
-                    BAR_WIDTH = 200
-                    FONT_SIZE = 19
-                    SPACE = 5
-                    font = ImageFont.truetype('gfx/weiruanzhengtihei.ttf', size=FONT_SIZE)
-
-                    # organize data
-                    poll = user.get_active_poll()
-                    answers = poll['answers']
-                    answered = []
-
-
-                    # initialise answered to an array of 0s
-                    for i in range(len(answers)):
-                        answered.append(0)
-
-                    # count votes
-                    for user_answer in poll['answered']:
-                        for i in range(len(answers)):
-                            chosen_answers = user_answer['chosen_answers']
-                            if chosen_answers >> i & 1:
-                                answered[i] += 1
-
-                    # normalize answered
-                    answered = list(map(lambda x: float(x)/max(answered + [1,]), answered))
-                    
-                    # find longest answer in pixels
-                    longest_answer = 0
-                    for answer in answers:
-                        l = font.getsize(answer)[0]
-                        if longest_answer < l:
-                            longest_answer = l
-
-                    dimen = (longest_answer + BAR_WIDTH + 3*SPACE, len(answers)*(BAR_HEIGHT + SPACE) + SPACE)
-
-                    # Check for image size
-                    if can_create_image_with_dimensions(dimen):
-
-                        img = Image.new('RGB', dimen, '#FFF')
-                        draw = ImageDraw.Draw(img)
-
-                        # draw bars
-                        for i in range(len(answers)):
-                            draw.text((SPACE, i*(BAR_HEIGHT + SPACE) + SPACE + (BAR_HEIGHT - FONT_SIZE)//2), answers[i], fill = '#000', font=font)
-                            col = '#72d353'
-                            if answered[i] == max(answered):
-                                # special color for largest value
-                                col = '#3f6de0'
-                            draw.rectangle((longest_answer + SPACE*2, i*(BAR_HEIGHT + SPACE) +SPACE, BAR_WIDTH * answered[i] + longest_answer + SPACE*2, (i+1) * BAR_HEIGHT + (i+1)*SPACE), fill = col)
-
-                            # draw text with percentage on bar
-                            perc_text = str(int(round(answered[i] / sum(answered) * 100))) + '%'
-                            perc_width = font.getsize(perc_text)[0]
-
-                            # offset percentage text if it doesn't fit in the bar
-                            perc_offset = 0
-                            perc_color = '#fff'
-                            if perc_width + 2*SPACE > BAR_WIDTH * answered[i]:
-                                perc_offset = BAR_WIDTH * answered[i]
-                                perc_color = '#000'
-
-                            draw.text((longest_answer + SPACE*3 + perc_offset, i*(BAR_HEIGHT + SPACE) +SPACE*3),
-                                perc_text,
-                                fill = perc_color,
-                                font = font
-                                )
-
-                        # send image
-                        output = StringIO.StringIO()
-                        img.save(output, 'PNG')
-                        send_image(output.getvalue(), chat_id, (user.get_active_poll()['question']+' - results').encode('utf-8'))
-                    else:
-                        reply(u'图片太大了...只能选其他的结果展示方式了 (╯﹏╰)')
-
                 else:
                     # just show number of votes
                     poll = user.get_active_poll()
@@ -796,8 +620,6 @@ class WebhookHandler(webapp2.RequestHandler):
 
                 user.activePoll = None
                 user.activeState = STATE_DEFAULT
-                            
-
             
             elif user.activeState == STATE_DELETE_POLL:
 
