@@ -146,6 +146,7 @@ class User(ndb.Model):
         poll['answers'] = []
         poll['answered'] = []
         poll['owner'] = self.id
+        poll['is_show_results'] = 'False'
         self.polls_arr.append(poll)
         return poll
 
@@ -217,6 +218,10 @@ class WebhookHandler(webapp2.RequestHandler):
                 if share_button:
                     keys += '[{"text": "share", "switch_inline_query": "'+poll.get('id')+'"}],'
 
+                # 实名显示投票结果
+                show_poll_results_data = str(poll['owner']) + ';' + str(poll['id']) + ';' + 'show_poll_results'
+                keys += '[{"text": "Show Results", "callback_data": "'+show_poll_results_data+'"}],'
+
                 keys = keys[:-1] + ']' # removes the last comma
             return '{"inline_keyboard": '+keys+'}'
 
@@ -240,7 +245,24 @@ class WebhookHandler(webapp2.RequestHandler):
                         # avoid name appear is related to vote select
                         user_names.sort()
 
-            return '\n' + '\n' + u'已投票的大笨蛋: ' +str(len(user_names)) + '\n' + '\n' + ', '.join(user_names)
+            msg = '\n' + '\n' + u'已投票的大笨蛋: ' +str(len(user_names)) + '\n' + '\n' + ', '.join(user_names) + '\n'
+
+            if poll['is_show_results'] == 'True':
+
+                msg += u'\n- 投票结果 -\n'
+
+                for i in range(len(poll['answers'])):
+                    names = []
+                    for user_answer in poll['answered']:
+                        # append user name if he has voted for this answer
+                        if user_answer['chosen_answers'] >> i & 1:
+                            u = User.get(id=user_answer['user_id'])
+                            if u:
+                                names.append(u.get_name())
+
+                    msg += '\n' + poll['answers'][i] + '\n' + '(' + str(len(names)) + '): ' + ','.join(names)
+
+            return msg
 
         def telegram_method(name, keyvalues):
 
@@ -352,7 +374,6 @@ class WebhookHandler(webapp2.RequestHandler):
 
             data = data.split(';')
             data[0] = int(data[0])
-            data[2] = int(data[2])
             try:
                 # find user the poll belongs to
                 poll_owner = User.get(id=data[0])
@@ -362,6 +383,23 @@ class WebhookHandler(webapp2.RequestHandler):
                 if not poll:
                     ticker(u'这个投票已经过期啦~~')
                     return
+
+                # 点击投票结果时, 跟新 投票面板 显示投票结果
+                if 'show_poll_results' in data:
+
+                    user_id = body['callback_query']['from']['id']
+
+                    if user_id == data[0]:
+                        # update poll display
+                        poll['is_show_results'] = 'True'
+                        update_keyboard(poll)
+
+                    User.isProcessing = None
+
+                    return
+
+                # 由于在 show_poll_results 的结果中没有这个数据, 故放到此处处理
+                data[2] = int(data[2])
 
                 # get user answer
                 user_answer = None
